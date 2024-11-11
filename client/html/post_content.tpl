@@ -22,6 +22,7 @@
                 autoplay: ctx.autoplay,
                 preload: 'auto',
                 poster: ctx.post.originalThumbnailUrl,
+                onloadstart: "this.volume=0.10",
             },
             ctx.makeElement('source', {
                 type: ctx.post.mimeType,

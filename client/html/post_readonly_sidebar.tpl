@@ -1,7 +1,7 @@
 <div class='readonly-sidebar'>
     <article class='details'>
         <section class='download'>
-            <a rel='external' href='<%- ctx.post.contentUrl %>'>
+            <a href='<%- ctx.post.contentUrl %>' download>
                 <i class='fa fa-download'></i><!--
             --><%= ctx.makeFileSize(ctx.post.fileSize) %> <!--
                 --><%- {
@@ -56,9 +56,9 @@
 
         <section class='search'>
             Search on
-            <a href='http://iqdb.org/?url=<%- encodeURIComponent(ctx.post.fullContentUrl) %>'>IQDB</a> &middot;
+            <a href='https://iqdb.org/?url=<%- encodeURIComponent(ctx.post.fullContentUrl) %>'>IQDB</a> &middot;
             <a href='https://danbooru.donmai.us/posts?tags=md5:<%- ctx.post.checksumMD5 %>'>Danbooru</a> &middot;
-            <a href='https://www.google.com/searchbyimage?&image_url=<%- encodeURIComponent(ctx.post.fullContentUrl) %>'>Google Images</a>
+            <a href='https://saucenao.com/search.php?url=<%- encodeURIComponent(ctx.post.fullContentUrl) %>'>SauceNAO</a>
         </section>
 
         <section class='social'>

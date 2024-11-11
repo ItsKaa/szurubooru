@@ -6,19 +6,19 @@ const defaultSettings = {
     listPosts: {
         safe: true,
         sketchy: true,
-        unsafe: false,
+        unsafe: true,
     },
-    upscaleSmallPosts: false,
-    endlessScroll: false,
+    upscaleSmallPosts: true,
+    endlessScroll: true,
     keyboardShortcuts: true,
     transparencyGrid: true,
     fitMode: "fit-both",
     tagSuggestions: true,
     autoplayVideos: false,
     postsPerPage: 42,
-    tagUnderscoresAsSpaces: false,
-    darkTheme: false,
-    postFlow: false,
+    tagUnderscoresAsSpaces: true,
+    darkTheme: true,
+    postFlow: true,
 };
 
 class Settings extends events.EventTarget {

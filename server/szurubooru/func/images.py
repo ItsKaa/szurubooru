@@ -24,10 +24,18 @@ def convert_heif_to_png(content: bytes) -> bytes:
     return img_byte_arr.getvalue()
 
 
+def check_for_loop(content: bytes) -> bytes:
+    img = PILImage.open(BytesIO(content))
+    return "loop" in img.info
+
+
 class Image:
     def __init__(self, content: bytes) -> None:
         self.content = content
         self._reload_info()
+        if self.info["format"]["format_name"] == "swf":
+            self.content = self.swf_to_png()
+            self._reload_info()
 
     @property
     def width(self) -> int:
@@ -41,7 +49,7 @@ class Image:
     def frames(self) -> int:
         return self.info["streams"][0]["nb_read_frames"]
 
-    def resize_fill(self, width: int, height: int) -> None:
+    def resize_fill(self, width: int, height: int, keep_transparency: bool = True, seek=True) -> None:
         width_greater = self.width > self.height
         width, height = (-1, height) if width_greater else (width, -1)
 
@@ -50,8 +58,12 @@ class Image:
             "{path}",
             "-f",
             "image2",
-            "-filter:v",
-            "scale='{width}:{height}'".format(width=width, height=height),
+            "-filter_complex",
+            (
+                "format=rgb32,scale={width}:{height}:flags=bicubic"
+                if keep_transparency else
+                "[0:v]format=rgb32,scale={width}:{height}:flags=bicubic[a];color=white[b];[b][a]scale2ref[b][a];[b][a]overlay"
+            ).format(width=width, height=height),
             "-map",
             "0:v:0",
             "-vframes",
@@ -60,10 +72,7 @@ class Image:
             "png",
             "-",
         ]
-        if (
-            "duration" in self.info["format"]
-            and self.info["format"]["format_name"] != "swf"
-        ):
+        if seek and "duration" in self.info["format"]:
             duration = float(self.info["format"]["duration"])
             if duration > 3:
                 cli = [
@@ -75,6 +84,19 @@ class Image:
             raise errors.ProcessingError("Error while resizing image.")
         self.content = content
         self._reload_info()
+
+    def swf_to_png(self) -> bytes:
+        return self._execute(
+            [
+                "--silent",
+                "-g",
+                "gl",
+                "--",
+                "{path}",
+                "-",
+            ],
+            program="exporter",
+        )
 
     def to_png(self) -> bytes:
         return self._execute(
@@ -96,24 +118,13 @@ class Image:
     def to_jpeg(self) -> bytes:
         return self._execute(
             [
-                "-f",
-                "lavfi",
-                "-i",
-                "color=white:s=%dx%d" % (self.width, self.height),
-                "-i",
+                "-quality",
+                "85",
+                "-sample",
+                "1x1",
                 "{path}",
-                "-f",
-                "image2",
-                "-filter_complex",
-                "overlay",
-                "-map",
-                "0:v:0",
-                "-vframes",
-                "1",
-                "-vcodec",
-                "mjpeg",
-                "-",
-            ]
+            ],
+            program="cjpeg",
         )
 
     def to_webm(self) -> bytes:
@@ -274,7 +285,10 @@ class Image:
         with util.create_temp_file(suffix="." + extension) as handle:
             handle.write(self.content)
             handle.flush()
-            cli = [program, "-loglevel", "32" if get_logs else "24"] + cli
+            if program in ["ffmpeg", "ffprobe"]:
+                cli = [program, "-loglevel", "32" if get_logs else "24"] + cli
+            else:
+                cli = [program] + cli
             cli = [part.format(path=handle.name) for part in cli]
             proc = subprocess.Popen(
                 cli,
@@ -285,7 +299,7 @@ class Image:
             out, err = proc.communicate()
             if proc.returncode != 0:
                 logger.warning(
-                    "Failed to execute ffmpeg command (cli=%r, err=%r)",
+                    "Failed to execute {program} command (cli=%r, err=%r)".format(program=program),
                     " ".join(shlex.quote(arg) for arg in cli),
                     err,
                 )
@@ -315,7 +329,7 @@ class Image:
         )
         assert "format" in self.info
         assert "streams" in self.info
-        if len(self.info["streams"]) < 1:
+        if len(self.info["streams"]) < 1 and self.info["format"]["format_name"] != "swf":
             logger.warning("The video contains no video streams.")
             raise errors.ProcessingError(
                 "The video contains no video streams."

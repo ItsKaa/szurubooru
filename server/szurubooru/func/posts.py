@@ -149,6 +149,12 @@ def get_post_thumbnail_backup_path(post: model.Post) -> str:
         get_post_security_hash(post.post_id),
     )
 
+def get_post_thumbnail_backup_path(post: model.Post) -> str:
+    assert post
+    return "posts/custom-thumbnails/%d_%s.dat" % (
+        post.post_id,
+        get_post_security_hash(post.post_id),
+    )
 
 def serialize_note(note: model.PostNote) -> rest.Response:
     assert note
@@ -694,6 +700,24 @@ def generate_post_thumbnail(post: model.Post) -> None:
     except errors.ProcessingError:
         files.save(get_post_thumbnail_path(post), EMPTY_PIXEL)
 
+
+def generate_post_thumbnail(post: model.Post) -> None:
+    assert post
+    if files.has(get_post_thumbnail_backup_path(post)):
+        content = files.get(get_post_thumbnail_backup_path(post))
+    else:
+        content = files.get(get_post_content_path(post))
+    try:
+        assert content
+        image = images.Image(content)
+        image.resize_fill(
+            int(config.config["thumbnails"]["post_width"]),
+            int(config.config["thumbnails"]["post_height"]),
+            keep_transparency=False,
+        )
+        files.save(get_post_thumbnail_path(post), image.to_jpeg())
+    except errors.ProcessingError:
+        files.save(get_post_thumbnail_path(post), EMPTY_PIXEL)
 
 def update_post_tags(
     post: model.Post, tag_names: List[str]

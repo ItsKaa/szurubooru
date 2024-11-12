@@ -95,8 +95,15 @@ def regenerate_thumbnails() -> None:
     for post in db.session.query(model.Post).all():
         print("Generating tumbnail for post %d ..." % post.post_id, end="\r")
         try:
-            postfuncs.generate_post_thumbnail(post)
-        except Exception:
+            assert post
+            if files.has(postfuncs.get_post_thumbnail_backup_path(post)):
+                content = files.get(postfuncs.get_post_thumbnail_backup_path(post))
+            else:
+                content = files.get(postfuncs.get_post_content_path(post))
+            path = postfuncs.get_post_thumbnail_path(post)
+            postfuncs.generate_post_thumbnail(path, content)
+        except Exception as e:
+            print(e)
             pass
 
 

@@ -11,6 +11,7 @@ const template = views.getTemplate("post-upload");
 const rowTemplate = views.getTemplate("post-upload-row");
 
 const TagList = require("../models/tag_list.js");
+const Tag = require("../models/tag.js");
 
 function _mimeTypeToPostType(mimeType) {
     return (
@@ -206,6 +207,11 @@ class PostUploadView extends events.EventTarget {
             this._commonTagsControl.addEventListener("change", (_) => {
                 this._commonTagsExpander.title = `Common Tags (${this._commonTags.length})`;
             });
+        }
+
+        // Add default tags.
+        if (this._commonTagsControl) {
+            this._commonTagsControl.addTagByName("tagme");
         }
     }
 

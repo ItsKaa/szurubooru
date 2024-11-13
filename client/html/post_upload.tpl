@@ -8,7 +8,7 @@
                     <%= ctx.makeCheckbox({
                         text: 'Skip duplicate',
                         name: 'skip-duplicates',
-                        checked: false,
+                        checked: true,
                     }) %>
                 </span>
 

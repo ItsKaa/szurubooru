@@ -52,6 +52,10 @@ class PostMainView {
             ctx.post
         );
 
+        if (!ctx.editMode) {
+            this._postNotesOverlayControl._hostNode.style.pointerEvents = "none";
+        }
+
         if (ctx.post.type === "video" || ctx.post.type === "flash") {
             this._postContentControl.disableOverlay();
         }

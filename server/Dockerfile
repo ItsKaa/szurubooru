@@ -1,7 +1,30 @@
 ARG ALPINE_VERSION=3.13
 
+## Compile CJPEG
+FROM alpine:$ALPINE_VERSION as builder
+ENV MOZJPEG_VERSION=4.1.1
 
+RUN apk --update --no-cache add \
+  build-base \
+  cmake \
+  nasm \
+  libjpeg \
+  libpng-dev \
+  zlib-dev \
+  musl-dev \
+  curl \
+  tar
+
+WORKDIR /src/
+RUN curl -LSs https://github.com/mozilla/mozjpeg/archive/refs/tags/v${MOZJPEG_VERSION}.tar.gz | tar -xz \
+&& cd mozjpeg-${MOZJPEG_VERSION} \
+&& mkdir build && cd build \
+&& cmake -G"Unix Makefiles" -DENABLE_STATIC=0 -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_INSTALL_LIBDIR=/usr/local/lib64 ../ \
+&& make install prefix=/usr/local libdir=/usr/local/lib64
+
+## Setup szurubooru
 FROM alpine:$ALPINE_VERSION as prereqs
+COPY --from=builder /usr/local /usr/local
 WORKDIR /opt/app
 
 RUN apk --no-cache add \
